@@ -1,0 +1,262 @@
+---
+title: "Energy Consumption Map"
+author: "Pradeep Adhokshaja"
+date: "28 November 2016"
+output: 
+  html_document: 
+    fig_height: 7
+    fig_width: 10
+    theme: journal
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Libraries and Tools
+
+
+```{r message=FALSE}
+library(dplyr)
+library(plotly)
+library(tidyr)
+library(gridExtra)
+library(ggthemes)
+
+
+```
+
+## Data Set import and modification
+
+We import the data set and modify certain aspects for our analysis.
+
+```{r message=F}
+energy= read.csv("C:/Users/User/Documents/us_energy/Energy Census and Economic Data US 2010-2014.csv",header=T,stringsAsFactors = F)
+str(energy)
+energy <- filter(energy,StateCodes!="US")
+```
+
+### Changing the State COdes 
+
+We replace the StateCOdes variable so that it  can be read by the ggmap() function for plotting a map.
+
+
+```{r message=FALSE}
+energy$StateCodes <- ifelse(energy$StateCodes=='AR',"arkansas",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='AL',"alabama",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='AK',"alaska",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='AZ',"arizona",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='CA',"california",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='CO',"colorado",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='CT',"connecticut",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='DC',"washington d.c",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='DE',"delaware",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='FL',"florida",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='GA',"georgia",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='HI',"hawaii",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='IA',"iowa",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='ID',"idaho",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='IL',"illinois",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='IN',"indiana",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='KS',"kansas",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='KY',"kentucky",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='LA',"louisiana",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MA',"massachusetts",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MD',"maryland",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='ME',"maine",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MI',"michigan",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MN',"minnesota",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MO',"missouri",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MS',"mississippi",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='MT',"montana",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NC',"north carolina",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='ND',"north dakota",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NE',"nebraska",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NH',"new hampshire",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NJ',"new jersey",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NM',"new mexico",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NV',"nevada",energy$StateCodes)
+
+energy$StateCodes <- ifelse(energy$StateCodes=='NY',"new york",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='OH',"ohio",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='OK',"oklahoma",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='OR',"oregon",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='PA',"pennsylvania",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='PR',"puerto rico",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='RI',"rhode island",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='SC',"south carolina",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='SD',"south dakota",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='TN',"tennessee",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='TX',"texas",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='UT',"utah",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='VA',"virginia",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='VT',"vermont",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='WA',"washington",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='WI',"wisconsin",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='WV',"west virginia",energy$StateCodes)
+energy$StateCodes <- ifelse(energy$StateCodes=='WY',"wyoming",energy$StateCodes)
+
+
+
+```
+
+## Extracting and merging the relevant data frames
+
+```{r message=FALSE}
+biomass <- energy[,c(1,42:46)]
+biomass <- biomass %>% gather(Year,biomass_c,2:6)
+biomass$Year <- as.numeric(gsub("BioMassC","",biomass$Year))
+
+
+coal <- energy[,c(1,47:51)]
+coal <- coal %>% gather(Year,coal_c,2:6)
+coal$Year <- as.numeric(gsub("CoalC","",coal$Year))
+
+fossil <- energy[,c(1,82:86)]
+fossil <- fossil %>% gather(Year,fossil_c,2:6)
+fossil$Year <- as.numeric(gsub("FossFuelC","",fossil$Year))
+
+geo <- energy[,c(1,87:91)]
+geo <- geo %>% gather(Year,geo_c,2:6)
+geo$Year <- as.numeric(gsub("GeoC","",geo$Year))
+
+hydro <- energy[,c(1,97:101)]
+hydro <- hydro %>% gather(Year,hydro_c,2:6)
+hydro$Year <- as.numeric(gsub("HydroC","",hydro$Year))
+
+natgas <- energy[,c(1,107:111)]
+natgas <- natgas %>% gather(Year,natgas_c,2:6)
+natgas$Year <- as.numeric(gsub("NatGasC","",natgas$Year))
+
+
+states_map <- map_data("state")
+```
+
+
+## Mapping the average values over the Years
+
+```{r message=FALSE}
+plot1 <- 
+  biomass %>% group_by(StateCodes) %>% summarise(biomass=mean(biomass_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(biomass)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Biomass Usage (2011-2014)")
+
+plot2 <- 
+  coal %>% group_by(StateCodes) %>% summarise(coal=mean(coal_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(coal)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Coal Usage (2011-2014)")
+
+
+plot3 <- 
+  fossil %>% group_by(StateCodes) %>% summarise(fossil=mean(fossil_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(fossil)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Fossil Fuel Usage (2011-2014)")
+
+plot4 <- 
+  geo %>% group_by(StateCodes) %>% summarise(geo=mean(geo_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(geo)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Geo Thermal Energy Usage (2011-2014)")
+
+plot5 <- 
+  hydro %>% group_by(StateCodes) %>% summarise(hydro=mean(hydro_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(hydro)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Hydro electric Usage (2011-2014)")
+
+plot6 <- 
+  natgas %>% group_by(StateCodes) %>% summarise(natgas=mean(natgas_c)) %>%
+  ggplot(aes(map_id = StateCodes)) +
+    geom_map(aes(fill = log(natgas)), map = states_map, color ="black") +
+    expand_limits(x = states_map$long, y = states_map$lat) +
+    theme_few()+
+    theme(legend.position = "bottom",
+         axis.ticks = element_blank(), 
+         axis.title = element_blank(), 
+         axis.text =  element_blank()) +
+    scale_fill_gradient(low="green", high="red") +
+    guides(fill = guide_colorbar(barwidth = 10, barheight = .5)) + 
+    ggtitle("Natural Gas Usage (2011-2014)")
+
+
+grid.arrange(plot1,plot2,plot3,plot4,plot5,plot6,nrow=3)
+```
+
+As per the plots above, Washington State has the largest usage of hydro electric energy followed by New York. Naturak Gas usage is dominated by Texas and California. This is true due to the immense amount of oil and gas fields available in these states. Geo Thermal Energy usage is dominated by California due to the large presence of natural geysers.Vermont has close to nil coal usage. It depends highly on renewable sources of energy.Texas dominates coal usage.Larger economies are largely depend on fossil fuels. 
